@@ -1,12 +1,34 @@
 import { apiClient } from './client';
-import { QuestionResponse } from '../types';
 
-export async function fetchRandomQuestion(): Promise<QuestionResponse> {
-  const { data } = await apiClient.get<QuestionResponse>('/questions/random');
-  return data;
+export const DifficultyLevel = {
+  Easy: "easy",
+  Medium: "medium",
+  Hard: "hard"
+} as const;
+
+export type DifficultyLevel = typeof DifficultyLevel[keyof typeof DifficultyLevel];
+
+export interface QuestionRequest {
+  topic: string;
+  difficulty: DifficultyLevel;
+  num_questions: number;
 }
 
-export async function fetchQuestionById(id: string): Promise<QuestionResponse> {
-  const { data } = await apiClient.get<QuestionResponse>(`/questions/${id}`);
+export interface Question {
+  question: string;
+  solution: string;
+  answer: string;
+}
+
+export interface QuestionResponse {
+  success: boolean;
+  topic: string;
+  questions: Question[];
+  generation_time_seconds: number;
+  model_used: string;
+}
+
+export async function generateQuestions(request: QuestionRequest): Promise<QuestionResponse> {
+  const { data } = await apiClient.post<QuestionResponse>('/math/generate', request);
   return data;
 }

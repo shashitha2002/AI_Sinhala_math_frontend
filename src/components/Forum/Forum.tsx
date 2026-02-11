@@ -1,4 +1,5 @@
-import React, { useState, KeyboardEvent } from 'react';
+import React, { useState, useRef } from 'react';
+import { type KeyboardEvent } from 'react';
 import { Send, MessageSquare, Menu, Plus } from 'lucide-react';
 import { useForum } from '../../hooks/useForum';
 import './SinhalaChatForm.css';
@@ -31,6 +32,7 @@ const Forum: React.FC<ForumProps> = ({ user }) => {
         { id: 1, title: 'ආයුබෝවන් සංවාදය', date: 'අද', messages: [] }
     ]);
     const [currentChatId, setCurrentChatId] = useState(1);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const [messages, setMessages] = useState<Message[]>([
         { id: 1, type: 'received', text: 'ආයුබෝවන්! මට ඔබට ගණිත ප්‍රශ්න වලට උදව් කළ හැකිය. ප්‍රශ්නයක් අහන්න!' },
@@ -115,6 +117,28 @@ const Forum: React.FC<ForumProps> = ({ user }) => {
             setMessages(chat.messages);
             setMessage('');
         }
+    };
+
+    // Math notation button handler
+    const insertSymbol = (symbol: string) => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = message;
+        const before = text.substring(0, start);
+        const after = text.substring(end);
+        
+        const newText = before + symbol + after;
+        setMessage(newText);
+
+        // Set cursor position after the inserted symbol
+        setTimeout(() => {
+            textarea.focus();
+            const newPosition = start + symbol.length;
+            textarea.setSelectionRange(newPosition, newPosition);
+        }, 0);
     };
 
     // Sinhala transliteration map
@@ -320,10 +344,24 @@ const Forum: React.FC<ForumProps> = ({ user }) => {
                                 {sinhalaEnabled ? t.sinhalaTyping : t.englishTyping}
                             </span>
                         </div>
+                        {/* Math Notation Buttons */}
+                                <div className="math-buttons">
+                                    <button type="button" onClick={() => insertSymbol('+')} className="math-btn">+</button>
+                                    <button type="button" onClick={() => insertSymbol('-')} className="math-btn">-</button>
+                                    <button type="button" onClick={() => insertSymbol('×')} className="math-btn">×</button>
+                                    <button type="button" onClick={() => insertSymbol('+')} className="math-btn">+</button>
+                                    <button type="button" onClick={() => insertSymbol('%')} className="math-btn">%</button>
+                                    <button type="button" onClick={() => insertSymbol('=')} className="math-btn">=</button>
+                                    <button type="button" onClick={() => insertSymbol('(')} className="math-btn">(</button>
+                                    <button type="button" onClick={() => insertSymbol(')')} className="math-btn">)</button>
+                                    <button type="button" onClick={() => insertSymbol('රු.')} className="math-btn">රු.</button>
+                                    <button type="button" onClick={() => insertSymbol(',')} className="math-btn">,</button>
+                                </div>
                         <div className="input-wrapper">
                             <div className="input-group">
                                 <label>{t.yourMessage}</label>
                                 <textarea
+                                    ref={textareaRef}
                                     value={message}
                                     onChange={handleMessageChange}
                                     onKeyDown={handleTextareaKeyDown}

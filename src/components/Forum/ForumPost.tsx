@@ -1,4 +1,5 @@
-import React, { useState, useEffect, FormEvent } from 'react';
+import React, { useState, useEffect } from 'react';
+import type { FormEvent } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useForum } from '../../hooks/useForum';
@@ -35,7 +36,7 @@ interface ForumPostProps {
     user?: any;
 }
 
-const ForumPost: React.FC<ForumPostProps> = ({ user }) => {
+const ForumPost: React.FC<ForumPostProps> = () => {
     const { t } = useTranslation();
     const { postId } = useParams<{ postId: string }>();
     const [post, setPost] = useState<Post | null>(null);
@@ -43,7 +44,7 @@ const ForumPost: React.FC<ForumPostProps> = ({ user }) => {
     const [submittingComment, setSubmittingComment] = useState(false);
     const mathContainerRef = React.useRef<HTMLDivElement>(null);
 
-    const { getPost, addComment, loading: forumLoading } = useForum();
+    const { getPost, addComment } = useForum();
     const [initialLoading, setInitialLoading] = useState(true);
 
     useEffect(() => {

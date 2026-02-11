@@ -215,8 +215,6 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 1400px;
-  margin: 0 auto;
   width: 100%;
 }
 
@@ -284,21 +282,20 @@ h1 {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 1.5rem;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 1.5rem 1.5rem;
   width: 100%;
+  height: 100%;
 }
 
 /* Messages Container */
 .messages-container {
   flex: 1;
   overflow-y: auto;
-  padding: 1.5rem;
+  padding: 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
 }
@@ -323,7 +320,7 @@ h1 {
 
 .message-wrapper {
   display: flex;
-  max-width: 85%;
+  max-width: 70%;
   animation: slideIn 0.3s ease-out;
 }
 
@@ -455,10 +452,11 @@ h1 {
 .input-area {
   background-color: #ffffff;
   border-radius: 1rem;
-  padding: 1.5rem;
+  padding: 1rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   border: 1px solid #e2e8f0;
   transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .chat-wrapper.dark .input-area {
@@ -471,8 +469,8 @@ h1 {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1.25rem;
-  padding-bottom: 1rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -655,6 +653,65 @@ input:checked+.toggle-slider:before {
   width: 1.25rem;
   height: 1.25rem;
   stroke-width: 2;
+}
+
+/* ===== Math Notation Buttons ===== */
+.math-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  background-color: #f8fafc;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+}
+
+.chat-wrapper.dark .math-buttons {
+  background-color: #0f172a;
+  border-color: #334155;
+}
+
+.math-btn {
+  min-width: 2.5rem;
+  height: 2.5rem;
+  padding: 0.5rem;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chat-wrapper.dark .math-btn {
+  background-color: #1e293b;
+  border-color: #475569;
+  color: #e2e8f0;
+}
+
+.math-btn:hover {
+  background-color: #e0f2fe;
+  border-color: #3b82f6;
+  color: #1e40af;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+.chat-wrapper.dark .math-btn:hover {
+  background-color: #334155;
+  border-color: #60a5fa;
+  color: #60a5fa;
+}
+
+.math-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 /* ===== Sinhala Font Support ===== */

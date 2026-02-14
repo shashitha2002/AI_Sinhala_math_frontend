@@ -9,12 +9,6 @@ export interface RegisterData {
     username: string;
     email: string;
     password: string;
-    profile?: {
-        school?: string;
-        district?: string;
-        grade?: string;
-        studentId?: string;
-    }
 }
 
 export const authService = {
@@ -29,6 +23,5 @@ export const authService = {
                 'Content-Type': 'application/x-www-form-urlencoded'
             }
         });
-    },
-    getMe: () => apiClient.get('/auth/me')
+    }
 };

@@ -1,10 +1,8 @@
 import React from 'react';
-import ModelPaperTaking from '../components/Quiz/ModelPaperTaking';
-import { useAuthContext } from '../contexts/AuthContext';
+import ModelPaperGenerator from '../components/ModelPaper/ModelPaperGenerator';
 
 const ModelPaperPage: React.FC = () => {
-    const { user } = useAuthContext();
-    return <ModelPaperTaking user={user} />;
+    return <ModelPaperGenerator />;
 };
 
 export default ModelPaperPage;

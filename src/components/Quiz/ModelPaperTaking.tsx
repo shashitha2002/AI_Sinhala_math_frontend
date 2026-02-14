@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "../../hooks/useTranslation";
 import { MODEL_PAPER_DATA } from "../../data/modelPaperData";
+import { transformGeneratedPaper } from "../../utils/modelPaperTransformer";
 import type { Question, Section } from "../../data/modelPaperData";
 
 interface AnswersState {
@@ -38,11 +39,22 @@ interface ScoreResult {
 
 interface ModelPaperTakingProps {
     user?: any;
+    generatedPaper?: any; // Backend-generated paper
 }
 
-const ModelPaperTaking: React.FC<ModelPaperTakingProps> = ({ user }) => {
+const ModelPaperTaking: React.FC<ModelPaperTakingProps> = ({ user, generatedPaper }) => {
     const { t, currentLanguage, changeLanguage } = useTranslation();
     const navigate = useNavigate();
+
+    // Debug logging
+    console.log('ModelPaperTaking - generatedPaper:', generatedPaper);
+
+    // Use generated paper if available, otherwise use static data
+    const modelPaperData = generatedPaper
+        ? transformGeneratedPaper(generatedPaper)
+        : MODEL_PAPER_DATA;
+
+    console.log('ModelPaperTaking - modelPaperData:', modelPaperData);
 
     // State
     const [currentSection, setCurrentSection] = useState(0);
@@ -52,10 +64,33 @@ const ModelPaperTaking: React.FC<ModelPaperTakingProps> = ({ user }) => {
     const [showGuidelines, setShowGuidelines] = useState<ToggleState>({});
     const [showSolution, setShowSolution] = useState<ToggleState>({});
     const [markedQuestions, setMarkedQuestions] = useState<Set<number>>(new Set());
-    const [timeRemaining, setTimeRemaining] = useState(MODEL_PAPER_DATA.duration * 60);
+    const [timeRemaining, setTimeRemaining] = useState(modelPaperData.duration * 60);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
     const [showInstructions, setShowInstructions] = useState(true);
+
+    // Safety check: if no questions exist, show error
+    if (!modelPaperData.sections || modelPaperData.sections.length === 0) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-dominant-900">
+                <div className="bg-white dark:bg-dominant-800 rounded-xl shadow-lg p-8 max-w-md">
+                    <div className="text-6xl mb-4 text-center">⚠️</div>
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4 text-center">
+                        No Questions Available
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">
+                        Please generate questions first before starting the quiz.
+                    </p>
+                    <button
+                        onClick={() => navigate('/quiz/model-paper')}
+                        className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
+                    >
+                        Go to Generator
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     // Refs
     const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -99,11 +134,11 @@ const ModelPaperTaking: React.FC<ModelPaperTakingProps> = ({ user }) => {
         return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     };
 
-    const getCurrentQuestion = (): Question => MODEL_PAPER_DATA.sections[currentSection]?.questions[currentQuestion];
+    const getCurrentQuestion = (): Question => modelPaperData.sections[currentSection]?.questions[currentQuestion];
 
     const getAllQuestions = () => {
         const questions: (Question & { sectionIndex: number; questionIndex: number; sectionName: string; sectionColor: string })[] = [];
-        MODEL_PAPER_DATA.sections.forEach((section, sIdx) => {
+        modelPaperData.sections.forEach((section, sIdx) => {
             section.questions.forEach((q, qIdx) => {
                 questions.push({ ...q, sectionIndex: sIdx, questionIndex: qIdx, sectionName: section.name, sectionColor: section.color });
             });
@@ -151,10 +186,10 @@ const ModelPaperTaking: React.FC<ModelPaperTakingProps> = ({ user }) => {
     };
 
     const handleNext = () => {
-        const section = MODEL_PAPER_DATA.sections[currentSection];
+        const section = modelPaperData.sections[currentSection];
         if (currentQuestion < section.questions.length - 1) {
             setCurrentQuestion(currentQuestion + 1);
-        } else if (currentSection < MODEL_PAPER_DATA.sections.length - 1) {
+        } else if (currentSection < modelPaperData.sections.length - 1) {
             setCurrentSection(currentSection + 1);
             setCurrentQuestion(0);
         }
@@ -165,7 +200,7 @@ const ModelPaperTaking: React.FC<ModelPaperTakingProps> = ({ user }) => {
             setCurrentQuestion(currentQuestion - 1);
         } else if (currentSection > 0) {
             setCurrentSection(currentSection - 1);
-            setCurrentQuestion(MODEL_PAPER_DATA.sections[currentSection - 1].questions.length - 1);
+            setCurrentQuestion(modelPaperData.sections[currentSection - 1].questions.length - 1);
         }
     };
 
@@ -200,7 +235,7 @@ const ModelPaperTaking: React.FC<ModelPaperTakingProps> = ({ user }) => {
         let correct = 0, total = 0, totalMarks = 0, obtainedMarks = 0;
         const sectionScores: { [sectionId: string]: SectionScore } = {};
 
-        MODEL_PAPER_DATA.sections.forEach(section => {
+        modelPaperData.sections.forEach(section => {
             let sc = 0, st = 0, sm = 0, so = 0;
             section.questions.forEach(q => {
                 total++; st++; totalMarks += q.marks; sm += q.marks;
@@ -252,17 +287,17 @@ const ModelPaperTaking: React.FC<ModelPaperTakingProps> = ({ user }) => {
                 <div className="bg-white dark:bg-dominant-800 rounded-2xl shadow-2xl max-w-2xl w-full p-8">
                     <div className="text-center mb-6">
                         <div className="text-6xl mb-4">📝</div>
-                        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">{MODEL_PAPER_DATA.title}</h1>
-                        <p className="text-gray-600 dark:text-gray-400">{MODEL_PAPER_DATA.titleEnglish}</p>
+                        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">{modelPaperData.title}</h1>
+                        <p className="text-gray-600 dark:text-gray-400">{modelPaperData.titleEnglish}</p>
                     </div>
 
                     <div className="grid grid-cols-3 gap-4 mb-6">
                         <div className="bg-blue-50 dark:bg-blue-900/40 rounded-lg p-4 text-center">
-                            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{MODEL_PAPER_DATA.duration}</div>
+                            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{modelPaperData.duration}</div>
                             <div className="text-sm text-gray-600 dark:text-gray-400">විනාඩි / Minutes</div>
                         </div>
                         <div className="bg-green-50 dark:bg-green-900/40 rounded-lg p-4 text-center">
-                            <div className="text-2xl font-bold text-green-600 dark:text-green-400">{MODEL_PAPER_DATA.totalMarks}</div>
+                            <div className="text-2xl font-bold text-green-600 dark:text-green-400">{modelPaperData.totalMarks}</div>
                             <div className="text-sm text-gray-600 dark:text-gray-400">මුළු ලකුණු / Marks</div>
                         </div>
                         <div className="bg-purple-50 dark:bg-purple-900/40 rounded-lg p-4 text-center">
@@ -274,7 +309,7 @@ const ModelPaperTaking: React.FC<ModelPaperTakingProps> = ({ user }) => {
                     <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 mb-6">
                         <h3 className="font-semibold text-yellow-800 dark:text-yellow-400 mb-2">📋 උපදෙස් / Instructions: </h3>
                         <ul className="space-y-2">
-                            {MODEL_PAPER_DATA.instructions.map((inst, idx) => (
+                            {modelPaperData.instructions.map((inst, idx) => (
                                 <li key={idx} className="text-sm text-gray-700 dark:text-gray-300 flex items-start">
                                     <span className="text-yellow-500 mr-2">•</span>{inst}
                                 </li>
@@ -285,7 +320,7 @@ const ModelPaperTaking: React.FC<ModelPaperTakingProps> = ({ user }) => {
                     <div className="bg-gray-50 dark:bg-dominant-700 rounded-lg p-4 mb-6">
                         <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">📚 කොටස් / Sections:</h3>
                         <div className="space-y-2">
-                            {MODEL_PAPER_DATA.sections.map((section, idx) => (
+                            {modelPaperData.sections.map((section, idx) => (
                                 <div key={idx} className="flex justify-between items-center text-sm text-gray-700 dark:text-gray-300">
                                     <span>{section.icon} {section.name}</span>
                                     <span className="text-gray-600 dark:text-gray-400">{section.questions.length} ප්‍රශ්න • {section.marks} ලකුණු</span>
@@ -322,7 +357,7 @@ const ModelPaperTaking: React.FC<ModelPaperTakingProps> = ({ user }) => {
                 <header className="bg-green-600 text-white shadow-md">
                     <div className="max-w-full mx-auto px-4 py-4">
                         <div className="flex justify-between items-center">
-                            <span className="font-semibold">📋 {MODEL_PAPER_DATA.title}</span>
+                            <span className="font-semibold">📋 {modelPaperData.title}</span>
                             <span className="text-lg font-bold">✅ විභාගය අවසන්</span>
                         </div>
                     </div>
@@ -364,7 +399,7 @@ const ModelPaperTaking: React.FC<ModelPaperTakingProps> = ({ user }) => {
                         <div className="mb-6">
                             <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-3">📊 කොටස් අනුව ප්‍රතිඵල / Section Breakdown: </h3>
                             <div className="space-y-2">
-                                {MODEL_PAPER_DATA.sections.map(section => {
+                                {modelPaperData.sections.map(section => {
                                     const ss = score.sectionScores[section.id];
                                     return (
                                         <div key={section.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-dominant-700 rounded-lg">
@@ -396,7 +431,7 @@ const ModelPaperTaking: React.FC<ModelPaperTakingProps> = ({ user }) => {
                     {/* Detailed Answers */}
                     <div className="bg-white dark:bg-dominant-800 rounded-xl shadow-lg p-6">
                         <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">📝 සවිස්තර පිළිතුරු / Detailed Answers</h3>
-                        {MODEL_PAPER_DATA.sections.map((section, sIdx) => (
+                        {modelPaperData.sections.map((section, sIdx) => (
                             <div key={sIdx} className="mb-6">
                                 <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-3 pb-2 border-b dark:border-dominant-700">{section.icon} {section.name}</h4>
                                 {section.questions.map((q) => {
@@ -436,7 +471,7 @@ const ModelPaperTaking: React.FC<ModelPaperTakingProps> = ({ user }) => {
             <header className="bg-blue-700 dark:bg-blue-900 text-white shadow-md sticky top-0 z-50">
                 <div className="flex justify-between items-center px-4 h-16">
                     <div className="flex items-center space-x-4">
-                        <div className="text-xl font-bold">{MODEL_PAPER_DATA.title}</div>
+                        <div className="text-xl font-bold">{modelPaperData.title}</div>
                         <span className="px-3 py-1 bg-white/20 rounded-full text-sm">
                             {formatTime(timeRemaining)}
                         </span>
@@ -474,7 +509,7 @@ const ModelPaperTaking: React.FC<ModelPaperTakingProps> = ({ user }) => {
                         <h3 className="font-bold text-gray-700 dark:text-gray-300">Question Palette</h3>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                        {MODEL_PAPER_DATA.sections.map((section, sIdx) => (
+                        {modelPaperData.sections.map((section, sIdx) => (
                             <div key={section.id}>
                                 <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 flex items-center">
                                     <span className="mr-2">{section.icon}</span> {section.name}

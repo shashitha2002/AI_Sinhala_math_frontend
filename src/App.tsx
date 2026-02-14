@@ -7,6 +7,7 @@ import PortfolioPage from './pages/PortfolioPage';
 import ProgressPage from './pages/ProgressPage';
 import MathQuizPage from './pages/MathQuizPage';
 import ModelPaperPage from './pages/ModelPaperPage';
+import ModelPaperTakePage from './pages/ModelPaperTakePage';
 import QuizHistoryPage from './pages/QuizHistoryPage';
 import { useAuth } from './hooks/useAuth';
 
@@ -46,6 +47,7 @@ function App() {
           <Route path="quiz/results/:quizId" element={<MathQuizPage />} />
           <Route path="quiz/take/:quizId" element={<MathQuizPage />} />
           <Route path="quiz/model-paper" element={<ModelPaperPage />} />
+          <Route path="model-paper/take" element={<ModelPaperTakePage />} />
           <Route path="portfolio" element={<PortfolioPage />} />
           <Route path="progress" element={<ProgressPage />} />
         </Route>

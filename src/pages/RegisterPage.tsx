@@ -13,11 +13,7 @@ const RegisterPage: React.FC = () => {
         name: '',
         email: '',
         password: '',
-        confirmPassword: '',
-        studentId: '',
-        school: '',
-        district: '',
-        grade: 'O-Level'
+        confirmPassword: ''
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -49,13 +45,7 @@ const RegisterPage: React.FC = () => {
             await register({
                 username: formData.name,
                 email: formData.email,
-                password: formData.password,
-                profile: {
-                    school: formData.school,
-                    district: formData.district,
-                    grade: formData.grade,
-                    studentId: formData.studentId
-                }
+                password: formData.password
             });
             navigate('/dashboard');
         } catch (err: any) {
@@ -92,7 +82,7 @@ const RegisterPage: React.FC = () => {
                             </div>
                         )}
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-6">
                             <div className="space-y-2">
                                 <label htmlFor="name" className="block text-sm font-semibold text-dominant-700 ml-1">
                                     {t('common.name')}
@@ -107,6 +97,7 @@ const RegisterPage: React.FC = () => {
                                     onChange={handleChange}
                                 />
                             </div>
+
                             <div className="space-y-2">
                                 <label htmlFor="email" className="block text-sm font-semibold text-dominant-700 ml-1">
                                     {t('common.email')}
@@ -121,38 +112,7 @@ const RegisterPage: React.FC = () => {
                                     onChange={handleChange}
                                 />
                             </div>
-                        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label htmlFor="school" className="block text-sm font-semibold text-dominant-700 ml-1">
-                                    {t('portfolio.school')}
-                                </label>
-                                <input
-                                    id="school"
-                                    name="school"
-                                    type="text"
-                                    className="input"
-                                    value={formData.school}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label htmlFor="district" className="block text-sm font-semibold text-dominant-700 ml-1">
-                                    {t('portfolio.district')}
-                                </label>
-                                <input
-                                    id="district"
-                                    name="district"
-                                    type="text"
-                                    className="input"
-                                    value={formData.district}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label htmlFor="password" className="block text-sm font-semibold text-dominant-700 ml-1">
                                     {t('auth.password')}
@@ -167,6 +127,7 @@ const RegisterPage: React.FC = () => {
                                     onChange={handleChange}
                                 />
                             </div>
+
                             <div className="space-y-2">
                                 <label htmlFor="confirmPassword" className="block text-sm font-semibold text-dominant-700 ml-1">
                                     {t('auth.confirmPassword')}

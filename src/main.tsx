@@ -13,7 +13,8 @@ import ForumPage from './pages/ForumPage';
 import ProgressPage from './pages/ProgressPage';
 import PortfolioPage from './pages/PortfolioPage';
 import MathQuizPage from './pages/MathQuizPage';
-import ModelPaperPage from './pages/ModelPaperPage';
+import ModelPaperGenerate from './components/Quiz/ModelPaperGenerate';
+import ModelPaperExam from './components/Quiz/ModelPaperExam';
 import Layout from './components/Layout/Layout';
 import BadgesPage from './pages/BadgesPage';
 import QuizHistoryPage from './pages/QuizHistoryPage';
@@ -82,7 +83,12 @@ const AppRoutes = () => {
         } />
         <Route path="/quiz/model-paper" element={
           <ProtectedRoute>
-            <ModelPaperPage />
+            <ModelPaperGenerate />
+          </ProtectedRoute>
+        } />
+        <Route path="/quiz/model-paper/exam" element={
+          <ProtectedRoute>
+            <ModelPaperExam />
           </ProtectedRoute>
         } />
         <Route path="/badges" element={

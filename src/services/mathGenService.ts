@@ -12,9 +12,20 @@ export class APIError extends Error {
     }
 }
 
+// ==================== Hardcoded Topics ====================
+
+export const MATH_TOPICS = [
+    { sinhala: 'පොළිය', english: 'Interest' },
+    { sinhala: 'සමීකරණ', english: 'Equations' },
+    { sinhala: 'කොටස් වෙළෙඳපොළ', english: 'Stock Market' },
+    { sinhala: 'ලඝුගණක', english: 'Logarithms' },
+    { sinhala: 'ශ්‍රීඝ්‍රතාවය', english: 'Speed' },
+    { sinhala: 'සමාන්තර ශ්‍රේණි', english: 'Arithmetic Progression' },
+];
+
 class MathQuestionAPI {
     async generateQuestions({
-        topic = 'වාරික ගණනය',
+        topic = 'පොළිය',
         difficulty = 'medium',
         numQuestions = 5,
     } = {}) {
@@ -30,13 +41,12 @@ class MathQuestionAPI {
         }
     }
 
-    async getTopics() {
-        try {
-            const response = await apiClient.get('/math/topics');
-            return response.data;
-        } catch (error: any) {
-            this.handleError(error);
-        }
+    getTopics() {
+        return {
+            topics: MATH_TOPICS,
+            default_questions: 5,
+            max_questions: 10,
+        };
     }
 
     async evaluateQuiz(questions: any) {
@@ -48,7 +58,7 @@ class MathQuestionAPI {
         }
     }
 
-    private handleError(error: any) {
+    private handleError(error: any): never {
         if (error.response) {
             throw new APIError(
                 error.response.data?.detail || `HTTP Error: ${error.response.status}`,

@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { type KeyboardEvent } from 'react';
-import { Send, MessageSquare, Menu, Plus } from 'lucide-react';
+import { Send, MessageSquare, Menu, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 import { useForum } from '../../hooks/useForum';
 import './SinhalaChatForm.css';
 
@@ -11,7 +11,7 @@ interface Message {
 }
 
 interface Chat {
-    id: number;
+    id: string;
     title: string;
     date: string;
     messages: Message[];
@@ -28,27 +28,62 @@ const Forum: React.FC<ForumProps> = ({ user }) => {
     const [language, setLanguage] = useState<'si' | 'en'>('si');
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
-    const [chatHistory, setChatHistory] = useState<Chat[]>([
-        { id: 1, title: 'ආයුබෝවන් සංවාදය', date: 'අද', messages: [] }
-    ]);
-    const [currentChatId, setCurrentChatId] = useState(1);
+    const [chatHistory, setChatHistory] = useState<Chat[]>([]);
+    const [currentChatId, setCurrentChatId] = useState<string>(Date.now().toString());
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const [messages, setMessages] = useState<Message[]>([
         { id: 1, type: 'received', text: 'ආයුබෝවන්! මට ඔබට ගණිත ප්‍රශ්න වලට උදව් කළ හැකිය. ප්‍රශ්නයක් අහන්න!' },
     ]);
 
-    const { chatWithGemini } = useForum();
+    const [editingChatId, setEditingChatId] = useState<string | null>(null);
+    const [editTitle, setEditTitle] = useState('');
+
+    const { chatWithGemini, getChatHistory, deleteChat, renameChat } = useForum();
+
+    // Load chat history from MongoDB on mount
+    useEffect(() => {
+        const loadHistory = async () => {
+            try {
+                const data = await getChatHistory();
+                if (data.chats && data.chats.length > 0) {
+                    const loadedChats: Chat[] = data.chats.map((chat: any) => {
+                        const msgs: Message[] = [
+                            { id: 0, type: 'received', text: 'ආයුබෝවන්! මට ඔබට ගණිත ප්‍රශ්න වලට උදව් කළ හැකිය. ප්‍රශ්නයක් අහන්න!' },
+                        ];
+                        chat.messages.forEach((m: any, i: number) => {
+                            msgs.push({ id: i * 2 + 1, type: 'sent', text: m.question });
+                            msgs.push({ id: i * 2 + 2, type: 'received', text: m.answer });
+                        });
+                        return {
+                            id: chat.chat_id,
+                            title: chat.title,
+                            date: 'අද',
+                            messages: msgs
+                        };
+                    });
+
+                    setChatHistory(loadedChats);
+                    // Load the most recent chat
+                    setCurrentChatId(loadedChats[0].id);
+                    setMessages(loadedChats[0].messages);
+                }
+            } catch (err) {
+                console.error('Failed to load chat history:', err);
+            }
+        };
+        loadHistory();
+    }, []);
 
     // Function to call Groq backend
     const getGeminiResponse = async (userQuestion: string) => {
         try {
             setIsLoading(true);
-            console.log('📤 Sending question to backend:', userQuestion);
+            console.log(' Sending question to backend:', userQuestion);
 
-            const data = await chatWithGemini(userQuestion);
+            const data = await chatWithGemini(userQuestion, currentChatId);
 
-            console.log('✅ Received answer:', data.answer.substring(0, 100) + '...');
+            console.log(' Received answer:', data.answer.substring(0, 100) + '...');
 
             return data.answer;
 
@@ -56,10 +91,10 @@ const Forum: React.FC<ForumProps> = ({ user }) => {
             console.error('❌ Error calling backend:', err);
 
             if (err.message && err.message.includes('Failed to fetch')) {
-                return '⚠️ සේවාදායකය සම්බන්ධ කළ නොහැක.\n\nකරුණාකර පරුක්ෂා කරන්න:\n1. Backend server එක ධාවනය වේද? (node server.js)\n2. පෝට් 5000 භාවිතයේද?\n3. CORS සක්‍රිය වී ඇද්ද?';
+                return ' සේවාදායකය සම්බන්ධ කළ නොහැක.\n\nකරුණාකර පරුක්ෂා කරන්න:\n1. Backend server එක ධාවනය වේද? (node server.js)\n2. පෝට් 5000 භාවිතයේද?\n3. CORS සක්‍රිය වී ඇද්ද?';
             }
 
-            return `⚠️ දෝෂයක්: ${err.message || 'Unknown error'}\n\nකරුණාකර නැවත උත්සාහ කරන්න.`;
+            return ` දෝෂයක්: ${err.message || 'Unknown error'}\n\nකරුණාකර නැවත උත්සාහ කරන්න.`;
 
         } finally {
             setIsLoading(false);
@@ -97,7 +132,7 @@ const Forum: React.FC<ForumProps> = ({ user }) => {
     const t = translations[language];
 
     const createNewChat = () => {
-        const newChatId = Date.now();
+        const newChatId = Date.now().toString();
         const newChat: Chat = {
             id: newChatId,
             title: t.newChat || 'නව සංවාදය',
@@ -110,13 +145,61 @@ const Forum: React.FC<ForumProps> = ({ user }) => {
         setMessage('');
     };
 
-    const loadChat = (chatId: number) => {
+    const loadChat = (chatId: string) => {
         const chat = chatHistory.find(c => c.id === chatId);
         if (chat) {
             setCurrentChatId(chatId);
             setMessages(chat.messages);
             setMessage('');
         }
+    };
+
+    const handleDeleteChat = async (e: React.MouseEvent, chatId: string) => {
+        e.stopPropagation();
+        try {
+            await deleteChat(chatId);
+            const updated = chatHistory.filter(c => c.id !== chatId);
+            setChatHistory(updated);
+            if (chatId === currentChatId) {
+                if (updated.length > 0) {
+                    setCurrentChatId(updated[0].id);
+                    setMessages(updated[0].messages);
+                } else {
+                    const newId = Date.now().toString();
+                    setCurrentChatId(newId);
+                    setMessages([{ id: 1, type: 'received', text: 'ආයුබෝවන්! මට ඔබට ගණිත ප්‍රශ්න වලට උදව් කළ හැකිය. ප්‍රශ්නයක් අහන්න!' }]);
+                }
+            }
+        } catch (err) {
+            console.error('Delete failed:', err);
+        }
+    };
+
+    const startRename = (e: React.MouseEvent, chatId: string, currentTitle: string) => {
+        e.stopPropagation();
+        setEditingChatId(chatId);
+        setEditTitle(currentTitle);
+    };
+
+    const handleRename = async (chatId: string) => {
+        if (!editTitle.trim()) {
+            setEditingChatId(null);
+            return;
+        }
+        try {
+            await renameChat(chatId, editTitle.trim());
+            setChatHistory(chatHistory.map(c =>
+                c.id === chatId ? { ...c, title: editTitle.trim() } : c
+            ));
+        } catch (err) {
+            console.error('Rename failed:', err);
+        }
+        setEditingChatId(null);
+    };
+
+    const cancelRename = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setEditingChatId(null);
     };
 
     // Math notation button handler
@@ -275,14 +358,45 @@ const Forum: React.FC<ForumProps> = ({ user }) => {
                 <div className="chat-list">
                     <div className="chat-group">
                         <h4>{t.today}</h4>
-                        {chatHistory.filter(chat => chat.date === (t.today)).map(chat => (
+                        {chatHistory.map(chat => (
                             <div
                                 key={chat.id}
                                 className={`chat-item ${chat.id === currentChatId ? 'active' : ''}`}
                                 onClick={() => loadChat(chat.id)}
                             >
                                 <MessageSquare className="chat-icon" />
-                                <span className="chat-title">{chat.title}</span>
+                                {editingChatId === chat.id ? (
+                                    <div className="chat-rename-input" onClick={e => e.stopPropagation()}>
+                                        <input
+                                            type="text"
+                                            value={editTitle}
+                                            onChange={e => setEditTitle(e.target.value)}
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter') handleRename(chat.id);
+                                                if (e.key === 'Escape') setEditingChatId(null);
+                                            }}
+                                            autoFocus
+                                        />
+                                        <button className="chat-action-btn confirm" onClick={() => handleRename(chat.id)}>
+                                            <Check size={14} />
+                                        </button>
+                                        <button className="chat-action-btn cancel" onClick={cancelRename}>
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <span className="chat-title">{chat.title}</span>
+                                        <div className="chat-actions">
+                                            <button className="chat-action-btn" onClick={e => startRename(e, chat.id, chat.title)}>
+                                                <Pencil size={14} />
+                                            </button>
+                                            <button className="chat-action-btn delete" onClick={e => handleDeleteChat(e, chat.id)}>
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -316,7 +430,14 @@ const Forum: React.FC<ForumProps> = ({ user }) => {
                                 className={`message-wrapper ${msg.type}`}
                             >
                                 <div className={`message-bubble ${msg.type}`}>
-                                    <p>{msg.text}</p>
+                                    <div className="message-text">
+                                        {msg.text.split('\n').map((line, i) => (
+                                            <span key={i}>
+                                                {line}
+                                                {i < msg.text.split('\n').length - 1 && <br />}
+                                            </span>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         ))}

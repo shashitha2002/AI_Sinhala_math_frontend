@@ -57,17 +57,44 @@ export const useForum = () => {
         }
     }, []);
 
-    const chatWithGemini = useCallback(async (question: string) => {
-        // Chat doesn't necessarily block other operations, but we can track loading
-        // For chat UI, usually local loading state is better, but we return the promise
+    const chatWithGemini = useCallback(async (question: string, chatId: string) => {
         try {
-            const response = await forumService.chatWithGemini(question);
+            const response = await forumService.chatWithGemini(question, chatId);
             return response.data;
         } catch (err: any) {
-            // Let the component handle specific chat errors
             throw err;
         }
     }, []);
 
-    return { getPosts, getPost, createPost, addComment, chatWithGemini, loading, error };
+    const getChatHistory = useCallback(async () => {
+        try {
+            const response = await forumService.getChatHistory();
+            return response.data;
+        } catch (err: any) {
+            console.error('Failed to load chat history:', err);
+            return { chats: [] };
+        }
+    }, []);
+
+    const deleteChat = useCallback(async (chatId: string) => {
+        try {
+            const response = await forumService.deleteChat(chatId);
+            return response.data;
+        } catch (err: any) {
+            console.error('Failed to delete chat:', err);
+            throw err;
+        }
+    }, []);
+
+    const renameChat = useCallback(async (chatId: string, title: string) => {
+        try {
+            const response = await forumService.renameChat(chatId, title);
+            return response.data;
+        } catch (err: any) {
+            console.error('Failed to rename chat:', err);
+            throw err;
+        }
+    }, []);
+
+    return { getPosts, getPost, createPost, addComment, chatWithGemini, getChatHistory, deleteChat, renameChat, loading, error };
 };

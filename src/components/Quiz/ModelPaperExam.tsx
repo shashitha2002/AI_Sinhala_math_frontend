@@ -84,6 +84,11 @@ const ModelPaperExam: React.FC = () => {
   // Notations
   const [notations, setNotations] = useState<NotationButton[]>([]);
 
+  // Guidelines
+  const [guidelines, setGuidelines] = useState<Record<string, string[]>>({});
+  const [guidelinesLoading, setGuidelinesLoading] = useState<Record<string, boolean>>({});
+  const [guidelinesVisible, setGuidelinesVisible] = useState<Record<string, boolean>>({});
+
   // Refs
   const timerRef = useRef<number | null>(null);
   const autoSaveRef = useRef<number | null>(null);
@@ -456,6 +461,64 @@ const ModelPaperExam: React.FC = () => {
   const totalQuestions = (section: Section) =>
     paper?.questions?.[section]?.length || 0;
 
+  // ==================== Guidelines ====================
+
+  const handleGetGuidelines = async (questionKey: string, questionText: string) => {
+    // Toggle visibility if already loaded
+    if (guidelines[questionKey]) {
+      setGuidelinesVisible((prev) => ({ ...prev, [questionKey]: !prev[questionKey] }));
+      return;
+    }
+
+    setGuidelinesLoading((prev) => ({ ...prev, [questionKey]: true }));
+    setGuidelinesVisible((prev) => ({ ...prev, [questionKey]: true }));
+    try {
+      const res = await modelPaperService.getGuidelines(questionText);
+      if (res.status === "success" && res.guidelines?.length > 0) {
+        setGuidelines((prev) => ({ ...prev, [questionKey]: res.guidelines }));
+      } else if (res.status === "filtered") {
+        setGuidelines((prev) => ({ ...prev, [questionKey]: [res.message || "මෙම ප්‍රශ්නය සඳහා මාර්ගෝපදේශ ලබාගත නොහැක."] }));
+      } else {
+        setGuidelines((prev) => ({ ...prev, [questionKey]: [res.error || "මාර්ගෝපදේශ ලබාගත නොහැකි විය."] }));
+      }
+    } catch {
+      setGuidelines((prev) => ({ ...prev, [questionKey]: ["මාර්ගෝපදේශ ලබාගැනීමේ දෝෂයකි. / Failed to fetch guidelines."] }));
+    } finally {
+      setGuidelinesLoading((prev) => ({ ...prev, [questionKey]: false }));
+    }
+  };
+
+  const renderGuidelinesButton = (questionKey: string, questionText: string) => (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => handleGetGuidelines(questionKey, questionText)}
+        disabled={guidelinesLoading[questionKey]}
+        className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg text-sm font-medium transition-colors"
+      >
+        {guidelinesLoading[questionKey]
+          ? "Loading..."
+          : guidelinesVisible[questionKey]
+            ? "මාර්ගෝපදේශ සඟවන්න (Hide Guidelines)"
+            : "මාර්ගෝපදේශ (Guidelines)"}
+      </button>
+      {guidelinesVisible[questionKey] && guidelines[questionKey] && (
+        <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-300 dark:border-green-700">
+          <h4 className="text-sm font-semibold text-green-800 dark:text-green-300 mb-2">
+            මාර්ගෝපදේශ (Guidelines):
+          </h4>
+          <ol className="list-decimal list-inside space-y-1">
+            {guidelines[questionKey].map((g, i) => (
+              <li key={i} className="text-sm text-green-700 dark:text-green-300">
+                {g}
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+    </div>
+  );
+
   // ==================== Render Helpers ====================
 
   const renderNotationBar = () => (
@@ -557,6 +620,8 @@ const ModelPaperExam: React.FC = () => {
             dir="auto"
           />
         </div>
+
+        {renderGuidelinesButton(`sa-${qIdx}`, q.question)}
       </div>
     );
   };
@@ -643,6 +708,11 @@ const ModelPaperExam: React.FC = () => {
                 dir="auto"
               />
             </div>
+
+            {renderGuidelinesButton(
+              `${section}-${qIdx}-${sqIdx}`,
+              `${q.question} - ${sq.sub_question_label}: ${sq.sub_question}`,
+            )}
           </div>
         ))}
       </div>

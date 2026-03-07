@@ -221,4 +221,14 @@ export const modelPaperService = {
         const { data } = await api.get('/topics');
         return data;
     },
+
+    // Get solving guidelines/hints for a question from MathRAG
+    getGuidelines: async (question: string, studentId?: string) => {
+        const MATHRAG_URL = 'http://localhost:5000/api';
+        const { data } = await axios.post(`${MATHRAG_URL}/guidelines`, {
+            question,
+            student_id: studentId || 'anonymous',
+        });
+        return data;
+    },
 };

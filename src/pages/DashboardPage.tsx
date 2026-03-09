@@ -17,20 +17,39 @@ import { getTopicKey } from '../utils/topicUtils';
 // AdaptiveRecommendation will eventually need to be refactored too, keeping as is for now but TS might complain about .js
 // Assuming I can import it or will refactor it soon.
 import AdaptiveRecommendation from '../components/Recommendations/AdaptiveRecommendation';
+import { useAuth } from '../hooks/useAuth';
+import stressClient from '../services/stressClient';
 
 interface DashboardProps {
     user: any; // Define a proper User interface later
 }
 
-const DashboardPage: React.FC<DashboardProps> = ({ user }) => {
+const DashboardPage: React.FC<DashboardProps> = () => {
     const { t } = useTranslation();
     const { getDashboard } = useProgress();
+    const { user } = useAuth();
     const [dashboardData, setDashboardData] = useState<any>(null); // Define proper DashboardData interface
     const [loading, setLoading] = useState(true);
+    const [stress, setStress] = useState<any>(null);
+    const [cameraStatus, setCameraStatus] = useState<"stopped" | "running">("stopped");
 
     useEffect(() => {
         fetchDashboardData();
     }, []);
+
+    useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await stressClient.get("/get_emotion_data");
+        setStress(res.data);
+      } catch (err) {
+        console.error("Failed to fetch stress data:", err);
+      }
+    }, 5000); // every 5 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+    
 
     const fetchDashboardData = async () => {
         try {
@@ -76,7 +95,7 @@ const DashboardPage: React.FC<DashboardProps> = ({ user }) => {
             <div className="mb-6 sm:mb-8">
                 <h1 className="text-2xl sm:text-3xl font-bold text-dominant-900 dark:text-dominant-50 break-words flex items-center gap-2">
                     <SparklesIcon className="h-6 w-6 sm:h-8 sm:w-8 text-accent-500 dark:text-accent-400" />
-                    {t('dashboard.welcomeBack', { name: user.name })}
+                    {t('dashboard.welcomeBack', { name: user?.username })}
                 </h1>
                 <p className="mt-2 text-sm sm:text-base text-dominant-600 dark:text-dominant-400">{t('dashboard.learningProgress')}</p>
             </div>
@@ -282,6 +301,22 @@ const DashboardPage: React.FC<DashboardProps> = ({ user }) => {
                     </div>
                 ) : (
                     <p className="text-dominant-500 dark:text-dominant-400 text-center py-6 sm:py-8 text-sm sm:text-base">{t('dashboard.startByTakingQuiz')}</p>
+                )}
+            </div>
+
+                {/* Stress Details */}
+            <div className="mt-6 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-100 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Stress Details
+                </h3>
+                {stress ? (
+                    <div className="mt-2 text-gray-700 dark:text-gray-300">
+                        <p>Emotion: {stress.emotion}</p>
+                        <p>Stress Level: {stress.stress_level}</p>
+                        <p>Confidence: {stress.confidence}%</p>
+                    </div>
+                ) : (
+                    <p className="text-gray-500">No stress data available</p>
                 )}
             </div>
         </div>

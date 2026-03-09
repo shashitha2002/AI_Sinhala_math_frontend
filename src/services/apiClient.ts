@@ -11,6 +11,7 @@ const apiClient: AxiosInstance = axios.create({
     }
 });
 
+
 // Request interceptor - Add token to requests
 apiClient.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
